@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+        >
+            <!-- integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuC0mLASjC" -->
+        <title>myPage</title>
+        <style> 
+            table { 
+                font-family: Arial, Helvetica, sans-serif; 
+                border-collapse: collapse; 
+              width: 100%; 
+            } 
+            td, th { 
+                border: 1px solid #ddd; 
+                padding: 6px; 
+            } 
+            tr:nth-child(even){background-color: #f2f2f2;} 
+            tr:hover {background-color: #ddd;} 
+            table th { 
+                padding-top: 12px; 
+                padding-bottom: 12px; 
+                text-align: left; 
+                background-color: #04AA6D !important;
+                color: white !important; 
+            } 
+        </style>
+    </head>
+    <body>
+        <h1>景點觀光展覽資訊</h1>
+        <input type="text" id="searchInput" placeholder="輸入關鍵字搜尋" onkeyup="filterData()">
+        <!-- <button id="searchButton" onclick="filterData()">搜尋</button> -->
+
+        <table id="csie" class="table table-striped table-hover">
+            <tr>
+                <th>名稱</th>
+                <th>地點</th>
+                <th>票價</th>
+            </tr>
+        </table>
+        <button id="prevButton" onclick="prevPage()">上一頁</button>
+        <span id="pageInfo"></span>
+        <button id="nextButton" onclick="nextPage()">下一頁</button>
+
+        <!-- <script src="./style.js"></script> -->
+        <script>
+            var openUrl = "https://cloud.culture.tw/frontsite/trans/SearchShowAction.do?method=doFindTypeJ&category=6";
+            var xhr = new XMLHttpRequest();
+            var dataset = []; // 儲存所有資料
+            var filteredDataset = []; // 儲存過濾後的資料
+            var currentPage = 0; // 追蹤當前頁面
+            const itemsPerPage = 10; // 每頁顯示的資料數量
+
+            xhr.open('GET', openUrl, true);
+            xhr.send();
+            xhr.onreadystatechange = function(){
+                if(this.readyState == 4 && this.status == 200){
+                    dataset = JSON.parse(this.responseText);
+                    filteredDataset = dataset; // 初始時顯示所有資料
+                    renderPage(currentPage); // 顯示第一頁資料
+                }
+            };
+
+            // 渲染頁面：根據 filteredDataset 來顯示
+            function renderPage(page){
+                var myTable = document.getElementById('csie');
+                var rows = myTable.getElementsByTagName("tr");
+                // 清空現有表格數據（只保留表頭）
+                for (var i = rows.length - 1; i > 0; i--) {
+                    myTable.deleteRow(i);
+                }
+
+                // 計算顯示的資料範圍
+                var start = page * itemsPerPage;
+                var end = Math.min((page + 1) * itemsPerPage, filteredDataset.length);
+                
+                // 插入資料行
+                for (var i = start; i < end; i++) {
+                    var data = filteredDataset[i];
+                    var row = myTable.insertRow(-1);
+                    row.insertCell(0).innerHTML = data['title'];
+                    row.insertCell(1).innerHTML = data['showInfo'][0]['location'];
+                    row.insertCell(2).innerHTML = data['showInfo'][0]['price'];
+                }
+
+                // 更新分頁按鈕狀態
+                updatePaginationButtons();
+
+                // 顯示當前頁數
+                displayPageInfo(page);
+            }
+
+            // 更新分頁按鈕狀態
+            function updatePaginationButtons() {
+                var prevButton = document.getElementById("prevButton");
+                var nextButton = document.getElementById("nextButton");
+
+                // 上一頁按鈕
+                prevButton.disabled = currentPage <= 0;
+
+                // 下一頁按鈕
+                nextButton.disabled = currentPage >= Math.ceil(filteredDataset.length / itemsPerPage) - 1;
+            }
+
+            // 顯示頁數信息
+            function displayPageInfo(page) {
+                var pageInfo = document.getElementById("pageInfo");
+                var totalPages = Math.ceil(filteredDataset.length / itemsPerPage);
+                pageInfo.innerHTML = `頁面 ${page + 1} / ${totalPages}`;
+            }
+
+            // 上一頁
+            function prevPage() {
+                if (currentPage > 0) {
+                    currentPage--;
+                    renderPage(currentPage);
+                }
+            }
+
+            // 下一頁
+            function nextPage() {
+                if (currentPage < Math.ceil(filteredDataset.length / itemsPerPage) - 1) {
+                    currentPage++;
+                    renderPage(currentPage);
+                }
+            }
+
+            // 搜索功能
+            function filterData() {
+                var searchQuery = document.getElementById('searchInput').value.trim().toLowerCase(); // 獲取搜索關鍵字並轉為小寫
+                if (!searchQuery) {
+                    filteredDataset = dataset; // 如果搜尋框為空，顯示所有資料
+                } else {
+                    // 過濾資料，匹配標題中的關鍵字
+                    filteredDataset = dataset.filter(function(data) {
+                        return data['title'].toLowerCase().includes(searchQuery);
+                    });
+                }
+
+                // 重設當前頁數，顯示過濾後資料的第一頁
+                currentPage = 0;
+
+                // 防止頁數超出範圍
+                if (currentPage >= Math.ceil(filteredDataset.length / itemsPerPage)) {
+                    currentPage = Math.ceil(filteredDataset.length / itemsPerPage) - 1; // 如果當前頁數超出最大頁數，設置為最後一頁
+                }
+
+                renderPage(currentPage); // 重新渲染頁面
+            }
+
+        </script>
+    </body>
+</html>
+    
